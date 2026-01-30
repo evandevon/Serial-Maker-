@@ -477,7 +477,7 @@ namespace serialmaker {
      * Move mouse to absolute X and Y position
      */
     //% color=#E74C3C
-    //% block="set mouse position to X %x Y %y"
+    //% block="set mouse position to X %x Y %y pixels"
     //% group="Mouse Position (Screen)"
     export function moveMouseXYAbsolute(x: number, y: number): void {
         sendCommand("MOUSE_POS_XY," + x + "," + y)
