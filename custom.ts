@@ -284,13 +284,6 @@ namespace serialmaker {
        TOOLS
     ----------------------------- */
 
-    //% block="keyboard and mouse control %state"
-    //% color=#E74C3C
-    //% group="Tools"
-    export function setHid(state: HidState): void {
-        sendCommand(state === HidState.Enable ? "START_HID" : "STOP_HID")
-    }
-
     let buffer: number[] = []
     let bufferSize = 10         // Default buffer size
     let bufferInitialized = false
