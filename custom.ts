@@ -582,6 +582,16 @@ namespace serialmaker {
     }
 
     /**
+     * Sends an emergency stop command via serial
+     */
+    //% color=#27AE60
+    //% block="stop speech"
+    //% group="Sound and Speech"
+    export function stopSpeech(): void {
+        serial.writeString("SAY,STOP_SPEECH\n")
+    }
+    
+    /**
      * Set text to speech voice
      */
     //% color=#27AE60
