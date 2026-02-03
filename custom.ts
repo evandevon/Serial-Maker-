@@ -969,11 +969,11 @@ namespace serialmaker {
         Ten = 10
     }
 
-    /**
-     * Send a value (and optional name) to a specific line in the line graph
-     */
+    let lineValues: number[] = [NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
+    let lineNames: string[] = ["", "", "", "", "", "", "", "", "", ""]
+
     //% color=#9B59B6
-    //% block="line graph set line %line value %value name %name"
+    //% block="Set line graph line %line value %value name %name"
     //% name.defl=""
     //% group="Graphs"
     export function lineGraphSetLine(
@@ -981,15 +981,35 @@ namespace serialmaker {
         value: number,
         name: string
     ): void {
-        let payload = name && name.length > 0 ? `${value}|${name}` : `${value}`
+        lineValues[line - 1] = value
+        lineNames[line - 1] = name
+    }
 
-        // Pad with empty fields so Python receives correct line index
+    //% color=#9B59B6
+    //% block="Send line graph data"
+    //% group="Graphs"
+    export function lineGraphSend(): void {
         let parts: string[] = []
-        for (let i = 1; i <= 10; i++) {
-            parts.push(i === line ? payload : "")
+
+        for (let i = 0; i < 10; i++) {
+            if (!isNaN(lineValues[i])) {
+                let payload =
+                    lineNames[i] && lineNames[i].length > 0
+                        ? `${lineValues[i]}|${lineNames[i]}`
+                        : `${lineValues[i]}`
+                parts.push(payload)
+            } else {
+                parts.push("")
+            }
         }
 
         sendCommand("LINE_GRAPH," + parts.join(","))
+
+        // Clear buffer after send
+        for (let i = 0; i < 10; i++) {
+            lineValues[i] = NaN
+            lineNames[i] = ""
+        }
     }
 
     /* ------------------------------------------------------------------
