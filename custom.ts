@@ -920,106 +920,33 @@ namespace serialmaker {
         )
     }
 
-    /* ------------------------------------------------------------------
-    * GRAPH CONTROLS
-    * ------------------------------------------------------------------ */
+    /* -----------------------------
+    SIMPLIFIED GRAPHING BLOCKS
+    Two-block approach for easier use
+    ----------------------------- */
 
-    export enum GraphControl {
+    export enum GraphType {
+        //% block="line graph"
+        Line,
+        //% block="column graph"
+        Column,
+        //% block="pie graph"
+        Pie
+    }
+
+    export enum GraphAction {
+        //% block="send data"
+        Send,
         //% block="clear data (reset scaling)"
         ClearData,
         //% block="clear graph (keep scaling)"
         ClearGraph,
         //% block="close window"
-        CloseWindow
+        Close
     }
 
-    export enum GraphType {
-        //% block="Line Graph"
-        Line = 0,
-        //% block="Column Graph"
-        Column = 1,
-        //% block="Pie Graph"
-        Pie = 2
-    }
-
-    /* ------------------------------------------------------------------
-    * LINE GRAPH
-    * ------------------------------------------------------------------ */
-
-    export enum LineNumber {
-        //% block="1" 
-        One = 1,
-        //% block="2"
-        Two = 2,
-        //% block="3"
-        Three = 3,
-        //% block="4"
-        Four = 4,
-        //% block="5"
-        Five = 5,
-        //% block="6"
-        Six = 6,
-        //% block="7"
-        Seven = 7,
-        //% block="8"
-        Eight = 8,
-        //% block="9"
-        Nine = 9,
-        //% block="10"
-        Ten = 10
-    }
-
-    let lineValues: number[] = [NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN]
-    let lineNames: string[] = ["", "", "", "", "", "", "", "", "", ""]
-
-    //% color=#9B59B6
-    //% block="Set line graph line %line value %value name %name"
-    //% name.defl=""
-    //% group="Graphs"
-    export function lineGraphSetLine(
-        line: LineNumber,
-        value: number,
-        name: string
-    ): void {
-        lineValues[line - 1] = value
-        lineNames[line - 1] = name
-    }
-
-    //% color=#9B59B6
-    //% block="Send line graph data"
-    //% group="Graphs"
-    export function lineGraphSend(): void {
-        let parts: string[] = []
-
-        for (let i = 0; i < 10; i++) {
-            if (!isNaN(lineValues[i])) {
-                let payload =
-                    lineNames[i] && lineNames[i].length > 0
-                        ? `${lineValues[i]}|${lineNames[i]}`
-                        : `${lineValues[i]}`
-                parts.push(payload)
-            } else {
-                parts.push("")
-            }
-        }
-
-        sendCommand("LINE_GRAPH," + parts.join(","))
-
-        // Clear buffer after send
-        for (let i = 0; i < 10; i++) {
-            lineValues[i] = NaN
-            lineNames[i] = ""
-        }
-    }
-
-    /* ------------------------------------------------------------------
-    * COLUMN GRAPH
-    * ------------------------------------------------------------------ */
-    /**
-     * Column numbers 1–30 (numeric dropdown)
-     */
-    export enum ColumnNumber {
-        //% block="1"  internal name _1
+    export enum DataSlot {
+        //% block="1"
         _1 = 1,
         //% block="2"
         _2 = 2,
@@ -1081,150 +1008,121 @@ namespace serialmaker {
         _30 = 30
     }
 
+    // Separate storage for each graph type
+    let lineGraphData: { [key: number]: { value: number, name: string } } = {}
+    let columnGraphData: { [key: number]: { value: number, name: string } } = {}
+    let pieGraphData: { [key: number]: { value: number, name: string } } = {}
 
-    /**
-     * Send a value (and optional name) to a specific column in the column graph
-     */
-    //% color=#9B59B6
-    //% block="column graph set column %column value %value name %name"
-    //% name.defl=""
-    //% group="Graphs"
-    export function columnGraphSetColumn(
-        column: ColumnNumber,   // numeric dropdown 1–30
-        value: number,
-        name: string
-    ): void {
-        const payload = name && name.length > 0 ? `${value}|${name}` : `${value}`
-
-        const parts: string[] = []
-        for (let i = 1; i <= 30; i++) {
-            parts.push(i === column ? payload : "")
+        /**
+         * BLOCK 1: Set data for any graph type
+         */
+        //% color=#9B59B6
+        //% block="set %graphType slot %slot value %value name %name"
+        //% value.defl=0
+        //% name.defl=""
+        //% inlineInputMode=inline
+        //% group="Graphs"
+        //% weight=100
+        export function setGraphData(
+            graphType: GraphType,
+            slot: DataSlot,
+            value: number,
+            name: string
+        ): void {
+            const data = {
+                value: value,
+                name: name || ""
+            }
+            
+            if (graphType === GraphType.Line) {
+                lineGraphData[slot] = data
+            } else if (graphType === GraphType.Column) {
+                columnGraphData[slot] = data
+            } else {
+                pieGraphData[slot] = data
+            }
         }
 
-        sendCommand("COLUMN_GRAPH," + parts.join(","))
-    }
-
-
-
     /**
-     * Control a graph window (Line, Column, or Pie)
+     * BLOCK 2: Send data or control the graph
      */
     //% color=#9B59B6
-    //% block="%graph %control"
+    //% block="%graphType %action"
     //% group="Graphs"
+    //% weight=90
     export function graphControl(
-        graph: GraphType,
-        control: GraphControl
+        graphType: GraphType,
+        action: GraphAction
     ): void {
         let prefix = ""
-        if (graph === GraphType.Line) {
+        
+        // Determine command prefix
+        if (graphType === GraphType.Line) {
             prefix = "LINE_GRAPH"
-        } else if (graph === GraphType.Column) {
+        } else if (graphType === GraphType.Column) {
             prefix = "COLUMN_GRAPH"
-        } else if (graph === GraphType.Pie) {
+        } else {
             prefix = "PIE_GRAPH"
         }
 
-        if (control === GraphControl.ClearData) {
+        // Handle actions
+        if (action === GraphAction.Send) {
+            sendGraphData(prefix, graphType)
+        } else if (action === GraphAction.ClearData) {
             sendCommand(`${prefix},CLEAR_DATA`)
-        } else if (control === GraphControl.ClearGraph) {
+            // Clear the correct buffer
+            if (graphType === GraphType.Line) {
+                lineGraphData = {}
+            } else if (graphType === GraphType.Column) {
+                columnGraphData = {}
+            } else {
+                pieGraphData = {}
+            }
+        } else if (action === GraphAction.ClearGraph) {
             sendCommand(`${prefix},CLEAR_GRAPH`)
         } else {
             sendCommand(`${prefix},CLOSE_WINDOW`)
         }
     }
 
-
-    /* ------------------------------------------------------------------
-    * PIE GRAPH
-    * ------------------------------------------------------------------ */
-
-    export enum PieSegment {
-        //% block="1" _1=1
-        _1 = 1,
-        //% block="2"
-        _2 = 2,
-        //% block="3"
-        _3 = 3,
-        //% block="4"
-        _4 = 4,
-        //% block="5"
-        _5 = 5,
-        //% block="6"
-        _6 = 6,
-        //% block="7"
-        _7 = 7,
-        //% block="8"
-        _8 = 8,
-        //% block="9"
-        _9 = 9,
-        //% block="10"
-        _10 = 10,
-        //% block="11"
-        _11 = 11,
-        //% block="12"
-        _12 = 12,
-        //% block="13"
-        _13 = 13,
-        //% block="14"
-        _14 = 14,
-        //% block="15"
-        _15 = 15,
-        //% block="16"
-        _16 = 16,
-        //% block="17"
-        _17 = 17,
-        //% block="18"
-        _18 = 18,
-        //% block="19"
-        _19 = 19,
-        //% block="20"
-        _20 = 20,
-        //% block="21"
-        _21 = 21,
-        //% block="22"
-        _22 = 22,
-        //% block="23"
-        _23 = 23,
-        //% block="24"
-        _24 = 24,
-        //% block="25"
-        _25 = 25,
-        //% block="26"
-        _26 = 26,
-        //% block="27"
-        _27 = 27,
-        //% block="28"
-        _28 = 28,
-        //% block="29"
-        _29 = 29,
-        //% block="30"
-        _30 = 30
-    }
-
-
-    //% block="pie graph set segment %segment value %value name %name"
-    //% color=#9B59B6
-    //% group="Graphs"
-    export function pieGraphSetSegment(
-        segment: PieSegment,
-        value: number,
-        name: string
-    ): void {
-        // Safety check
-        if (segment < 1) segment = 1
-        if (segment > 30) segment = 30
-
-        // Payload for this segment
-        const payload = name && name.length > 0 ? `${value}|${name}` : `${value}`
-
-        // Build all 30 fields
+    /**
+     * Helper: Send accumulated graph data
+     */
+    function sendGraphData(prefix: string, graphType: GraphType): void {
+        const maxSlots = 30
         const parts: string[] = []
-        for (let i = 1; i <= 30; i++) {
-            parts.push(i === segment ? payload : "")
+        
+        // Get the correct data array
+        let currentData: { [key: number]: { value: number, name: string } }
+        if (graphType === GraphType.Line) {
+            currentData = lineGraphData
+        } else if (graphType === GraphType.Column) {
+            currentData = columnGraphData
+        } else {
+            currentData = pieGraphData
         }
 
-        sendCommand("PIE_GRAPH," + parts.join(","))
+        for (let i = 1; i <= maxSlots; i++) {
+            if (currentData[i]) {
+                const payload = currentData[i].name 
+                    ? `${currentData[i].value}|${currentData[i].name}`
+                    : `${currentData[i].value}`
+                parts.push(payload)
+            } else {
+                parts.push("")
+            }
+        }
+
+        sendCommand(`${prefix},${parts.join(",")}`)
+        
+        // Clear the correct buffer after send
+        if (graphType === GraphType.Line) {
+            lineGraphData = {}
+        } else if (graphType === GraphType.Column) {
+            columnGraphData = {}
+        } else {
+            pieGraphData = {}
+        }
     }
 
     /* ------------------------------------------------------------------
@@ -1610,7 +1508,8 @@ namespace serialmaker {
      * Show the Serial GUI window
      */
     //% color=#E67E22
-    //% block="GUI show window x %x y %y width %w height %h background %bg always on top %top"
+    //% block="GUI show x %x y %y w %w h %h bg %bg top %top"
+    //% inlineInputMode=inline
     //% group="Graphical User Interface (GUI)"
     //% bg.defl="white"
     //% w.defl="200"
