@@ -1,6 +1,6 @@
 {
   "name": "serial-maker",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Serial command generator for the SerialMaker app. https://www.teacherspayteachers.com/store/little-tall-tales",
   "dependencies": {
     "core": "*"
