@@ -198,7 +198,7 @@ namespace serialmaker {
         case SpecialKey.Alt: return "ALT"
         case SpecialKey.Shift: return "SHIFT"
         case SpecialKey.Windows: return "WIN"
-        case SpecialKey.CapsLock: return "CAPS_LOCK"
+        case SpecialKey.CapsLock: return "CAPSLOCK"
 
         // Function keys
         case SpecialKey.F1: return "F1"
