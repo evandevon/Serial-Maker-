@@ -1,7 +1,7 @@
 {
   "name": "serial-maker",
   "version": "0.1.2",
-  "description": "Serial command generator for PC-side visualisation and control of microcontrollers",
+  "description": "Serial command generator for the SerialMaker app. https://www.teacherspayteachers.com/store/little-tall-tales",
   "dependencies": {
     "core": "*"
   },
